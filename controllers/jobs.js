@@ -1,21 +1,72 @@
+const Job = require('../models/Job')
+const { StatusCodes } = require('http-status-codes')
+const { BadRequestError, NotFoundError } = require('../errors')
+const { UnauthenticatedError } = require('../errors')
+
 const getAllJobs = async (req, res) => {
-    res.send('get all jobs')
+    const jobs = await Job.find({ createdBy: req.user.userId }).sort('createdAt')
+    return res.status(StatusCodes.OK).json({
+        status: 'success',
+        data: {
+            jobs
+        }
+    })
 }
 
 const getJob = async (req, res) => {
-    res.send('get job')
+    const job = await Job.findOne({
+        _id: req.params.id,
+        createdBy: req.user.userId
+    })
+    if (!job) {
+        throw new NotFoundError(`No job with id ${req.params.id}`)
+    }
+    return res.status(StatusCodes.OK).json({
+        status: 'success',
+        data: {
+            job
+        }
+    })
 }
 
 const createJob = async (req, res) => {
-    res.json(req.user)
+    req.body.createdBy = req.user.userId
+    const job = await Job.create(req.body)
+    return res.status(201).json({
+        status: 'success',
+        data: {
+            job
+        }
+    })
 }
 
 const updateJob = async (req, res) => {
-    res.send('update job')
+    const job = await Job.findOneAndUpdate({ _id: req.params.id, createdBy: req.user.userId }, { position: req.body.position, company: req.body.company }, {
+        new: true,
+        runValidators: true
+    })
+    if (!job) {
+        throw new NotFoundError(`No job with id ${req.params.id}`)
+    }
+
+    return res.status(StatusCodes.OK).json({
+        status: 'success',
+        data: {
+            job
+        }
+    })
 }
 
 const deleteJob = async (req, res) => {
-    res.send('delete job')
+    const job = await Job.findOneAndRemove({ _id: req.params.id, createdBy: req.user.userId })
+    if (!job) {
+        throw new NotFoundError(`No job with id ${req.params.id}`)
+    }
+    return res.status(StatusCodes.OK).json({
+        status: 'success',
+        data: null
+    })
+
 }
 
 module.exports = {
